@@ -132,8 +132,53 @@ Aqui vamos definir as regras de tráfego entre as zonas:
 
 Nós aqui podemos verificar que criamos uma regra com duas ações:
 - Para sair: é permitido o tráfego ICMP;
-- Para entrar: é permitido o trafégo que foi iniciado a partir do interior da rede.
+- Para entrar: é permitido o tráfego que foi iniciado a partir do interior da rede.
 
 Para verificar as regras criadas, basta usar o comando `$ show firewall`.
 
-(POR ACABAR)
+(POR ACABAR A PARTIR DA ALINEA 6)
+
+Aqui vamos definir as regras que permitem os dispositivos da rede interna aceder aos servidores DMZ (ICMP):
+```console
+ # set firewall name FROM-INSIDE-TO-DMZ rule 10 description "Accept ICMP Echo Request"
+ # set firewall name FROM-INSIDE-TO-DMZ rule 10 action accept
+ # set firewall name FROM-INSIDE-TO-DMZ rule 10 protocol icmp
+ # set firewall name FROM-INSIDE-TO-DMZ rule 10 icmp type 8
+ # set firewall name FROM-INSIDE-TO-DMZ rule 10 destination address 192.1.1.0/24
+ # set zone-policy zone INSIDE from DMZ firewall name TO-INSIDE
+ # set zone-policy zone DMZ from INSIDE firewall name FROM-INSIDE-TO-DMZ
+ # commit
+# save
+```
+
+Ou seja, vamos conseguir pingar os servidores da DMZ a partir da rede interna, ao contrário apenas é enviado tráfego que foi iniciado a partir da rede interna.
+
+Aqui vamos definir as regras que permitem os dispositivos da rede externa aceder aos servidores DMZ (ICMP):
+```console
+ # set firewall name FROM-OUTSIDE-TO-DMZ rule 10 description "Accept ICMP Echo Request"
+ # set firewall name FROM-OUTSIDE-TO-DMZ rule 10 action accept
+ # set firewall name FROM-OUTSIDE-TO-DMZ rule 10 protocol icmp
+ # set firewall name FROM-OUTSIDE-TO-DMZ rule 10 icmp type 8
+ # set firewall name FROM-OUTSIDE-TO-DMZ rule 10 destination address 192.1.1.40
+ # set firewall name FROM-DMZ-TO-OUTSIDE rule 10 description "Accept Established-Related Connections"
+ # set firewall name FROM-DMZ-TO-OUTSIDE rule 10 action accept
+ # set firewall name FROM-DMZ-TO-OUTSIDE rule 10 state established enable
+ # set firewall name FROM-DMZ-TO-OUTSIDE rule 10 state related enable
+ # set zone-policy zone OUTSIDE from DMZ firewall name FROM-DMZ-TO-OUTSIDE
+ # set zone-policy zone DMZ from OUTSIDE firewall name FROM-OUTSIDE-TO-DMZ
+ # commit
+# save
+```
+
+Ou seja, vamos conseguir pingar o servidor `192.1.1.40` a partir da rede externa, ao contrário apenas é enviado tráfego que foi iniciado a partir da rede externa.
+
+De seguida vamos definir também que os dispositivos da rede externa podem mandar pacotes UDP (apenas pela porta `8080`) para o servidor `192.1.1.140`
+```console
+ # set firewall name FROM-OUTSIDE-TO-DMZ rule 12 description "Accept UDP-8080"
+ # set firewall name FROM-OUTSIDE-TO-DMZ rule 12 action accept
+ # set firewall name FROM-OUTSIDE-TO-DMZ rule 12 protocol udp
+ # set firewall name FROM-OUTSIDE-TO-DMZ rule 12 destination address 192.1.1.140
+ # set firewall name FROM-OUTSIDE-TO-DMZ rule 12 destination port 8080
+ # commit
+# save
+```
